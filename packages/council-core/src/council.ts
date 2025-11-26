@@ -1,7 +1,6 @@
 import {
   type ProviderRegistry,
   type GenerationRequest,
-  type GenerationResponse,
   type Critique,
   type ProviderId,
   CritiqueSchema,
@@ -24,14 +23,14 @@ import {
 } from "./utils";
 
 /**
- * Default council configuration
+ * Default council configuration - using only OpenAI and Google
  */
 const DEFAULT_CONFIG: CouncilConfig = {
-  workerProviders: ["openai", "anthropic", "google", "grok"],
-  chairmanProvider: "anthropic",
+  workerProviders: ["openai", "google"],
+  chairmanProvider: "openai",
   maxTokens: 4096,
   temperature: 0.7,
-  debug: false,
+  debug: true,
 };
 
 /**
@@ -59,22 +58,36 @@ export class Council {
       phase5_synthesis_ms: 0,
     };
 
+    console.log("🚀 Starting council query...");
+    console.log("📝 Prompt:", prompt.substring(0, 100) + "...");
+    console.log("🔧 Config:", JSON.stringify(this.config, null, 2));
+
     // Phase 1 & 2: Fan-out and Independent Generation
+    console.log("\n📤 Phase 1 & 2: Fan-out and Generation...");
     const phase1Start = performance.now();
     const workerResponses = await this.executeWorkers(prompt, systemPrompt);
     debug.phase1_fanout_ms = performance.now() - phase1Start;
-    debug.phase2_generation_ms = debug.phase1_fanout_ms; // Combined
+    debug.phase2_generation_ms = debug.phase1_fanout_ms;
+    console.log(`✅ Got ${workerResponses.length} worker responses in ${debug.phase1_fanout_ms.toFixed(0)}ms`);
+
+    if (workerResponses.length === 0) {
+      throw new Error("No worker responses received");
+    }
 
     // Phase 3: Anonymize & Share
+    console.log("\n🎭 Phase 3: Anonymize & Share...");
     const phase3Start = performance.now();
     const shuffled = shuffleArray(workerResponses);
     const anonymized = this.anonymizeWorkerResponses(shuffled);
     debug.phase3_anonymize_ms = performance.now() - phase3Start;
+    console.log(`✅ Anonymized ${anonymized.length} responses`);
 
     // Phase 4: Critique Round
+    console.log("\n🔍 Phase 4: Critique Round...");
     const phase4Start = performance.now();
     const critiques = await this.executeCritiqueRound(prompt, anonymized);
     debug.phase4_critique_ms = performance.now() - phase4Start;
+    console.log(`✅ Got ${critiques.length} critique sets in ${debug.phase4_critique_ms.toFixed(0)}ms`);
 
     // Aggregate critiques
     const aggregatedCritiques = this.aggregateCritiques(
@@ -84,6 +97,7 @@ export class Council {
     );
 
     // Phase 5: Chairman Synthesis
+    console.log("\n👑 Phase 5: Chairman Synthesis...");
     const phase5Start = performance.now();
     const finalResponse = await this.executeSynthesis(
       prompt,
@@ -91,8 +105,10 @@ export class Council {
       critiques
     );
     debug.phase5_synthesis_ms = performance.now() - phase5Start;
+    console.log(`✅ Synthesis complete in ${debug.phase5_synthesis_ms.toFixed(0)}ms`);
 
     const totalLatencyMs = performance.now() - startTime;
+    console.log(`\n🎉 Total time: ${totalLatencyMs.toFixed(0)}ms`);
 
     return {
       finalResponse,
@@ -116,13 +132,18 @@ export class Council {
       this.registry.hasProvider(id)
     );
 
+    console.log(`  Available providers: ${availableProviders.join(", ")}`);
+
     if (availableProviders.length === 0) {
       throw new Error("No LLM providers available for council workers");
     }
 
     const requests = availableProviders.map(async (providerId) => {
       const provider = this.registry.getProvider(providerId);
-      if (!provider) return null;
+      if (!provider) {
+        console.log(`  ❌ Provider ${providerId} not found`);
+        return null;
+      }
 
       const messages: GenerationRequest["messages"] = [];
       if (systemPrompt) {
@@ -131,11 +152,13 @@ export class Council {
       messages.push({ role: "user", content: prompt });
 
       try {
+        console.log(`  ⏳ Calling ${providerId}...`);
         const response = await provider.generate({
           messages,
-          maxTokens: this.config.maxTokens,
-          temperature: this.config.temperature,
+          maxTokens: this.config.maxTokens ?? 4096,
+          temperature: this.config.temperature ?? 0.7,
         });
+        console.log(`  ✅ ${providerId} responded (${response.latencyMs.toFixed(0)}ms)`);
 
         return {
           providerId,
@@ -143,7 +166,7 @@ export class Council {
           response,
         };
       } catch (error) {
-        console.error(`Worker ${providerId} failed:`, error);
+        console.error(`  ❌ Worker ${providerId} failed:`, error);
         return null;
       }
     });
@@ -206,19 +229,22 @@ Return ONLY the JSON array, no other text.`;
       const startTime = performance.now();
 
       try {
+        console.log(`  ⏳ Getting critique from ${providerId}...`);
         const response = await provider.generate({
           messages: [
             { role: "system", content: SYSTEM_PROMPTS.critique },
             { role: "user", content: critiquePrompt },
           ],
-          maxTokens: this.config.maxTokens,
-          temperature: 0.3, // Lower temperature for more consistent evaluation
+          maxTokens: this.config.maxTokens ?? 4096,
+          temperature: 0.3,
         });
 
         const latencyMs = performance.now() - startTime;
+        console.log(`  ✅ ${providerId} critique done (${latencyMs.toFixed(0)}ms)`);
 
         // Parse critiques from response
         const critiques = this.parseCritiques(response.content);
+        console.log(`  📊 Parsed ${critiques.length} critiques from ${providerId}`);
 
         return {
           criticProviderId: providerId,
@@ -227,7 +253,7 @@ Return ONLY the JSON array, no other text.`;
           latencyMs,
         };
       } catch (error) {
-        console.error(`Critique from ${providerId} failed:`, error);
+        console.error(`  ❌ Critique from ${providerId} failed:`, error);
         return null;
       }
     });
@@ -243,7 +269,10 @@ Return ONLY the JSON array, no other text.`;
     try {
       // Try to extract JSON from the response
       const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) return [];
+      if (!jsonMatch) {
+        console.log("  ⚠️ No JSON array found in critique response");
+        return [];
+      }
 
       const parsed = JSON.parse(jsonMatch[0]) as unknown[];
       return parsed
@@ -252,8 +281,8 @@ Return ONLY the JSON array, no other text.`;
           return result.success ? result.data : null;
         })
         .filter((c): c is Critique => c !== null);
-    } catch {
-      console.error("Failed to parse critiques");
+    } catch (e) {
+      console.error("  ❌ Failed to parse critiques:", e);
       return [];
     }
   }
@@ -304,6 +333,8 @@ Return ONLY the JSON array, no other text.`;
       );
     }
 
+    console.log(`  ⏳ Chairman (${this.config.chairmanProvider}) synthesizing...`);
+
     const critiquesFormatted = modelCritiques.map((mc, idx) => ({
       criticId: `Critic ${idx + 1}`,
       evaluations: JSON.stringify(mc.critiques, null, 2),
@@ -321,11 +352,13 @@ Return ONLY the JSON array, no other text.`;
           { role: "system", content: SYSTEM_PROMPTS.synthesis },
           { role: "user", content: synthesisPrompt },
         ],
-        maxTokens: this.config.maxTokens,
+        maxTokens: this.config.maxTokens ?? 4096,
         temperature: 0.7,
       },
       this.config.chairmanModel
     );
+
+    console.log(`  ✅ Chairman synthesis complete`);
 
     return response.content;
   }
