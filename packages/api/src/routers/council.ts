@@ -12,7 +12,8 @@ console.log("  GROK_API_KEY:", process.env.GROK_API_KEY ? "✅ Set" : "❌ Missi
 
 // Initialize provider registry (uses env vars)
 const registry = new ProviderRegistry();
-console.log("📦 Available providers:", registry.getAvailableProviderIds());
+const availableProviderIds = registry.getAvailableProviderIds();
+console.log("📦 Available providers:", availableProviderIds);
 
 export const councilRouter = router({
   /**
@@ -20,7 +21,7 @@ export const councilRouter = router({
    */
   getProviders: publicProcedure.query(() => {
     return {
-      available: registry.getAvailableProviderIds(),
+      available: availableProviderIds,
       count: registry.count,
     };
   }),
@@ -31,7 +32,13 @@ export const councilRouter = router({
   query: publicProcedure
     .input(CouncilQuerySchema)
     .mutation(async ({ input }) => {
-      const council = new Council(registry, input.config);
+      // TEMPORARY: Force Google-only mode since OpenAI quota is exceeded
+      // Remove this override once OpenAI billing is resolved
+      const council = new Council(registry, {
+        workerProviders: ["google"],
+        chairmanProvider: "google",
+        debug: true,
+      });
       const result = await council.query(input.prompt, input.systemPrompt);
 
       return {
