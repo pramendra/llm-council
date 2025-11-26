@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@council/*": ["packages/*/src"]
+    }
+  },
+  "references": [
+    { "path": "packages/llm-providers" },
+    { "path": "packages/council-core" },
+    { "path": "packages/api" },
+    { "path": "packages/db" },
+    { "path": "packages/auth" },
+    { "path": "apps/server" },
+    { "path": "apps/web" }
+  ]
+}

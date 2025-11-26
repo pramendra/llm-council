@@ -1,0 +1,24 @@
+{
+  "name": "@council/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "tsdown",
+    "start": "bun dist/index.js",
+    "check-types": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "hono": "catalog:",
+    "@hono/trpc-server": "catalog:",
+    "@council/api": "workspace:*",
+    "@council/auth": "workspace:*",
+    "@council/db": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "tsdown": "catalog:"
+  }
+}
