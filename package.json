@@ -53,5 +53,25 @@
   "engines": {
     "node": ">=20.0.0",
     "bun": ">=1.3.0"
-  }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pramendra/llm-council.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pramendra/llm-council/issues"
+  },
+  "homepage": "https://github.com/pramendra/llm-council#readme",
+  "keywords": [
+    "llm",
+    "ai",
+    "ensemble",
+    "router",
+    "openai",
+    "google",
+    "gemini",
+    "multi-model",
+    "council"
+  ]
 }

@@ -62,11 +62,94 @@
 # Install dependencies
 bun install
 
+# Copy environment variables
+cp .env.example .env
+
+# Edit .env with your API keys (at least one required)
+# OPENAI_API_KEY=sk-...
+# GOOGLE_AI_KEY=AI...
+
 # Start development servers
 bun dev
+```
 
-# Build for production
-bun build
+## 🧪 Test the Council
+
+Run the end-to-end test to see the council in action:
+
+```bash
+bun --env-file=.env run test-council.ts
+```
+
+### Example Output
+
+```
+=== Environment Check ===
+OPENAI_API_KEY: SET
+GOOGLE_AI_KEY: SET
+
+=== Initializing Registry ===
+Available providers: [ "openai", "google" ]
+
+=== Creating Council (Google only mode) ===
+
+=== Running Council Query ===
+🚀 Starting council query...
+�� Prompt: What are the main differences between Python and JavaScript? Be concise....
+🔧 Config: {
+  "workerProviders": [
+    "google"
+  ],
+  "chairmanProvider": "google",
+  "maxTokens": 4096,
+  "temperature": 0.7,
+  "debug": true
+}
+
+📤 Phase 1 & 2: Fan-out and Generation...
+  Available providers: google
+  ⏳ Calling google...
+  ✅ google responded (7808ms)
+✅ Got 1 worker responses in 7809ms
+
+🎭 Phase 3: Anonymize & Share...
+✅ Anonymized 1 responses
+
+🔍 Phase 4: Critique Round...
+  ⏳ Getting critique from google...
+  ✅ google critique done (5387ms)
+  📊 Parsed 1 critiques from google
+✅ Got 1 critique sets in 5393ms
+
+👑 Phase 5: Chairman Synthesis...
+  ⏳ Chairman (google) synthesizing...
+  ✅ Chairman synthesis complete
+✅ Synthesis complete in 2759ms
+
+🎉 Total time: 15962ms
+
+=== Result ===
+Final answer: Here are the main differences between Python and JavaScript:
+
+*   **Primary Domain:**
+    *   **Python:** Backend web development, data science, AI/ML, scripting, automation, desktop applications.
+    *   **JavaScript:** Web browsers (frontend), backend (Node.js), mobile apps (React Native), desktop apps (Electron).
+
+*   **Typing:**
+    *   **Python:** Dynamically and **strongly** typed (fewer implicit type conversions).
+    *   **JavaScript:** Dynamically and **loosely** typed (more implicit type conversions).
+
+*   **Concurrency Model:**
+    *   **Python:** Primarily synchronous (blocking) by default, relies on `async/await` for concurrency.
+    *   **JavaScript:** Primarily asynchronous (non-blocking) via an event loop, well-suited for I/O operations.
+
+*   **Syntax & Readability:**
+    *   **Python:** Emphasizes readability with significant whitespace (indentation for code blocks).
+    *   **JavaScript:** Uses curly braces `{}` for code blocks, similar to C-style languages.
+
+*   **Execution Environment:**
+    *   **Python:** Runs on a general-purpose interpreter (e.g., CPython); typically server-side or local scripts.
+    *   **JavaScript:** Primarily runs in web browsers; Node.js provides a server-side runtime environment.
 ```
 
 ## 📁 Project Structure
@@ -88,7 +171,7 @@ llm-council/
 ## 🔧 Environment Variables
 
 ```env
-# LLM API Keys
+# LLM API Keys (at least one required)
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 GOOGLE_AI_KEY=
@@ -120,6 +203,12 @@ Think of it like a **board of directors**:
 | Fact-Checking | Cross-validation exposes hallucinations |
 | Creative Work | Diverse outputs → richer synthesis |
 | Enterprise AI | Reduces single-vendor risk and bias |
+
+## 📚 Documentation
+
+- [Architecture](./docs/ARCHITECTURE.md) - System design and data flow
+- [API Reference](./docs/API_REFERENCE.md) - tRPC endpoints and types
+- [Development](./docs/DEVELOPMENT.md) - Local setup and contribution
 
 ## 📄 License
 
