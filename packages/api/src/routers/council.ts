@@ -3,8 +3,16 @@ import { router, publicProcedure, protectedProcedure } from "../index";
 import { ProviderRegistry } from "@council/llm-providers";
 import { Council, CouncilQuerySchema } from "@council/council-core";
 
+// Debug: Log environment variables at startup
+console.log("🔑 Environment check:");
+console.log("  OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "✅ Set" : "❌ Missing");
+console.log("  ANTHROPIC_API_KEY:", process.env.ANTHROPIC_API_KEY ? "✅ Set" : "❌ Missing");
+console.log("  GOOGLE_AI_KEY:", process.env.GOOGLE_AI_KEY ? "✅ Set" : "❌ Missing");
+console.log("  GROK_API_KEY:", process.env.GROK_API_KEY ? "✅ Set" : "❌ Missing");
+
 // Initialize provider registry (uses env vars)
 const registry = new ProviderRegistry();
+console.log("📦 Available providers:", registry.getAvailableProviderIds());
 
 export const councilRouter = router({
   /**

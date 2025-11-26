@@ -1,5 +1,17 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDotEnv": [".env"],
+  "globalPassThroughEnv": [
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY", 
+    "GOOGLE_AI_KEY",
+    "GROK_API_KEY",
+    "DATABASE_URL",
+    "BETTER_AUTH_SECRET",
+    "PORT",
+    "NODE_ENV",
+    "NEXT_PUBLIC_SERVER_URL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -8,7 +20,8 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "dotEnv": [".env"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]
